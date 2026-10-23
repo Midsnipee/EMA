@@ -10,6 +10,15 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- ECU gateways over SunSpec Modbus TCP: an ECU address typed with port 502
+  (`192.168.1.19:502`) is read through the ECU's Modbus, for an ECU-R whose
+  port 8899 is closed. One power per micro-inverter (AC side), its voltage,
+  frequency and temperature; the ECU's power, inverters online and the sum
+  of their lifetime energies. Read-only. Each micro-inverter needs an
+  address in EMA Manager (Modbus Configuration).
+
 ## [0.1.4] - 2026-10-23
 
 ## [0.1.3] - 2026-10-18

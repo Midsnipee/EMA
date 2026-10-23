@@ -136,6 +136,35 @@ l'interroge là : rien ne passe par EMA.
    connaît (leur identifiant est celui de l'onduleur lui-même : ils restent
    les mêmes si l'ECU est remplacé).
 
+### Port 8899 fermé : le mode Modbus (port 502)
+
+Certains ECU-R ont le port 8899 fermé (connexion refusée) alors que leur
+**SunSpec Modbus** peut s'activer. Il faut un ECU-R série 2160 en
+firmware 1.3.7 ou plus, un ECU-R série 2162 en 2.0.2 ou plus, ou un ECU-C
+en C1.1.3 ou plus. L'ECU-B n'a pas le Modbus.
+
+1. Dans **EMA Manager** > ECU APP > Workspace > **Modbus Configuration**,
+   activez **Modbus** et donnez à **chaque micro-onduleur une adresse**
+   (1, 2, 3…). Laissé à 0, un onduleur n'est pas visible. Le débit (baud)
+   ne compte pas en TCP. **Enregistrez.**
+2. Dans Gladys, saisissez l'ECU **avec le port 502** :
+   `192.168.1.19:502`. C'est le port qui choisit le mode Modbus.
+3. Enregistrez, puis ouvrez **Découverte**.
+
+Ce qui change en Modbus :
+
+- **Une seule puissance par micro-onduleur**, côté AC. L'ECU ne donne pas
+  la puissance de chaque panneau, ni les valeurs DC.
+- **Pas d'énergie du jour** pour l'ECU. L'**énergie totale** est la somme
+  de celles des onduleurs, publiée seulement quand chacun la donne.
+- **L'ECU n'envoie pas son identifiant** en Modbus. Son appareil reçoit un
+  identifiant tiré de son adresse (`MB…`) : gardez-lui une adresse fixe.
+- La première lecture cherche les onduleurs (adresses 1, 2, 3…), puis
+  recommence une fois par heure pour trouver ceux que vous ajoutez.
+- Une demande perdue sur la liaison radio de l'ECU est refaite jusqu'à
+  3 fois. La lecture reste en **lecture seule** : aucune commande n'est
+  envoyée aux onduleurs.
+
 **Le rythme.** Un ECU est connu pour se bloquer si on l'interroge trop
 souvent. Il est lu à chaque **intervalle de lecture des ECU** (300 s par
 défaut, et jamais moins : le rythme que recommande l'intégration Home

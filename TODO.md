@@ -64,6 +64,15 @@
 - [ ] The DS3 voltage: the reference reads two voltages and shows the first
       (one AC voltage); confirm it is the grid voltage.
 
+## ECU over SunSpec Modbus (port 502)
+
+- [ ] By day: the powers, voltages and temperatures of model 101 against
+      EMA Manager (they read 0 at night, state MPPT).
+- [ ] Whether the float lifetime energy (model 111, WH) is filled by day;
+      without it, no index for a Modbus ECU.
+- [ ] Model 114 (L = 48): what it holds.
+- [ ] The pace: 9 units read every 300 s without the ECU hanging, over days.
+
 ## Decisions
 
 - **ECU read-only in v1**: no on/off per inverter, no power limit, no zero

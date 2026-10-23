@@ -37,6 +37,7 @@ import {
   parseEcuInverterExternalId,
 } from './devices.js';
 import { EcuClient } from './ecu.js';
+import { EcuModbusClient } from './ecu-sunspec.js';
 import { T } from './i18n.js';
 
 const AWAKE = new Set(['producing', 'idle']);
@@ -46,6 +47,10 @@ const MAX_PACED = 50;
 const BATCH = 100;
 const BATCH_GAP = 20_000;
 
+/** An address typed with port 502 is read over SunSpec Modbus, any other through port 8899. */
+const defaultClient = (options) =>
+  options.port === ECU.MODBUS.PORT ? new EcuModbusClient(options) : new EcuClient(options);
+
 const sumOf = (values) => values.reduce((total, w) => total + w, 0);
 
 export class EcuGateways {
@@ -54,7 +59,7 @@ export class EcuGateways {
    * productionEvents, guards and persist. `queue` is shared by every ECU
    * (one connection at a time).
    */
-  constructor(app, { queue, clientFactory = (options) => new EcuClient(options) }) {
+  constructor(app, { queue, clientFactory = defaultClient }) {
     this.app = app;
     this.queue = queue;
     this.clientFactory = clientFactory;
@@ -468,7 +473,14 @@ export class EcuGateways {
       [...this.ecus.values()]
         .filter((e) => e.identified)
         .map((e) => [e.id, e.hostKey, e.model, e.firmware, e.inverters]),
-      [...this.micros.values()].map((m) => [m.uid, m.ecuId, m.type, m.channels, m.phases]),
+      [...this.micros.values()].map((m) => [
+        m.uid,
+        m.ecuId,
+        m.type,
+        m.channels,
+        m.phases,
+        Boolean(m.acOnly),
+      ]),
     ]);
   }
 
@@ -521,7 +533,8 @@ export class EcuGateways {
     const online = Boolean(fresh && micro.online);
     return {
       power: online ? sumOf(micro.power) : 0,
-      panels: micro ? micro.power.map((w) => (online ? w : 0)) : [],
+      // Over Modbus only the AC power is known: no power per panel.
+      panels: micro && !micro.acOnly ? micro.power.map((w) => (online ? w : 0)) : [],
       temperature: online ? micro.temperature : null,
       status: !micro
         ? 'waiting'

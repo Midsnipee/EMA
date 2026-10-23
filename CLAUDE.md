@@ -53,6 +53,9 @@ src/gateways.js     the ECU gateways: pace (kept across restarts of the app),
 src/ecu.js          the only TCP access (port 8899): one connection per
                     query, one at a time for all ECUs, pauses (EcuQueue)
 src/ecu-protocol.js ECU frames -> objects, bounded and checked (pure)
+src/modbus.js       the only Modbus TCP access (port 502): function 03 only
+src/ecu-sunspec.js  the ECU over SunSpec Modbus: units, models 1/101/111,
+                    the same shape as ecu-protocol.js for src/gateways.js
 test/fixtures/      EZ1 answers shaped after the manual and user reports
 test/helpers/       fake EZ1 inverters (fetch, firmware variants, sleep),
                     fake timers; Gladys is the SDK's fake
@@ -101,6 +104,24 @@ test/helpers/       fake EZ1 inverters (fetch, firmware variants, sleep),
   time, pauses, longer waits after failures (see `ECU` in
   `src/constants.js`). Never add a query without weighing that.
 - Read-only in v1 (see TODO.md "Decisions").
+
+## What is known of the ECU over SunSpec Modbus
+
+- **Source**: APsystems "SunSpec Modbus" Rev 3.3 (2025-01) and a real ECU-R
+  (2160, LAN) with 9 DS3, port 8899 refused, port 502 open (2026-10).
+- An `ecu_hosts` entry with port 502 selects it (`src/gateways.js`).
+- Each micro-inverter is a Modbus unit, its address set in EMA Manager
+  (Modbus Configuration; 0 = not exposed). Base 40000 (0-based): `SunS`,
+  then model 1 (serial = the inverter id), 101 (integers + scale factors),
+  111 (floats, state 0xFFFF), 114 (undocumented), end.
+- Seen on the DS3: DC values and the integer lifetime energy "not
+  implemented"; at night the state stays 4 (MPPT) with every figure at 0
+  (hence "online" = a grid voltage or a power). Some requests time out
+  (Zigbee): retried 3 times.
+- No ECU id, no energy of the day over Modbus: the id is `MB` + 10 hex
+  digits of SHA-1(`host:port`); the lifetime is the sum of the inverters'
+  float energies, none when one is missing.
+- Never write: model 123 (immediate controls) can shut an inverter down.
 
 ## Rules
 

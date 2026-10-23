@@ -327,7 +327,8 @@ export function buildEcuInverterDevice(gladys, inverter) {
   const channels = inverter.channels ?? 0;
   if (channels > 0) {
     features.push(power(id, FEATURE.POWER, 'Production power', 5000));
-    for (let n = 1; n <= channels; n += 1) {
+    // Over Modbus (`acOnly`) the ECU gives the AC power only: no feature per panel.
+    for (let n = 1; !inverter.acOnly && n <= channels; n += 1) {
       features.push(power(id, FEATURE.input(n), `Input ${n} power`, 2000));
     }
     const voltage = (key, name) =>
@@ -367,6 +368,7 @@ export function buildEcuInverterDevice(gladys, inverter) {
       { name: 'model', value: model },
       { name: 'type', value: inverter.type ?? '' },
       { name: 'channels', value: String(channels) },
+      ...(inverter.acOnly ? [{ name: 'source', value: 'modbus' }] : []),
     ],
   };
 }
@@ -480,7 +482,7 @@ export function ecuInverterStates(deviceId, inverter) {
       powers.reduce((total, w) => total + w, 0),
     ),
   );
-  for (const [index, watts] of powers.entries()) {
+  for (const [index, watts] of (inverter.acOnly ? [] : powers).entries()) {
     states.push(...state(deviceId, FEATURE.input(index + 1), watts));
   }
   if (!inverter.online) {

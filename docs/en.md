@@ -126,6 +126,34 @@ nothing goes through EMA.
    for the ECU and one per micro-inverter it knows (their external id is the
    inverter's own id, so they stay the same if the ECU is replaced).
 
+### Port 8899 closed: the Modbus mode (port 502)
+
+Some ECU-Rs refuse connections on port 8899 but can turn on **SunSpec
+Modbus**. It needs an ECU-R of the 2160 series on firmware 1.3.7 or later,
+of the 2162 series on 2.0.2 or later, or an ECU-C on C1.1.3 or later. The
+ECU-B has no Modbus.
+
+1. In **EMA Manager** > ECU APP > Workspace > **Modbus Configuration**,
+   turn **Modbus** on and give **each micro-inverter an address** (1, 2,
+   3...). Left at 0, an inverter is not visible. The baud rate does not
+   matter over TCP. **Save.**
+2. In Gladys, type the ECU **with port 502**: `192.168.1.19:502`. The port
+   is what selects the Modbus mode.
+3. Save, then open **Discovery**.
+
+What changes over Modbus:
+
+- **One power per micro-inverter**, on the AC side. The ECU gives neither
+  the power of each panel nor the DC values.
+- **No energy of the day** for the ECU. The **lifetime energy** is the sum
+  of the inverters', published only when every one of them gives it.
+- **The ECU does not send its id** over Modbus. Its device gets an id
+  derived from its address (`MB...`): keep it a fixed address.
+- The first reading looks for the inverters (addresses 1, 2, 3...), then
+  again once an hour to find the ones you add.
+- A request lost on the ECU's radio link is asked again up to 3 times.
+  Read-only: no command is ever sent to the inverters.
+
 **The pace.** An ECU is known to hang when asked too often. It is read
 every **ECU refresh interval** (300 s by default, and never less, the pace
 the Home Assistant integration recommends), one connection at a time for

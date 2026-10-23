@@ -67,8 +67,8 @@
       "type": "string",
       "label": { "en": "ECU gateway addresses", "fr": "Adresses des passerelles ECU" },
       "description": {
-        "en": "For micro-inverters behind an APsystems ECU gateway (ECU-B, ECU-R, ECU-C): the IP address of each ECU, separated by commas (port 8899 by default). Give it a fixed address in your router. Leave empty if you only have EZ1s.",
-        "fr": "Pour des micro-onduleurs derrière une passerelle APsystems ECU (ECU-B, ECU-R, ECU-C) : l'adresse IP de chaque ECU, séparées par des virgules (port 8899 par défaut). Donnez-lui une adresse fixe dans votre box. Laissez vide si vous n'avez que des EZ1."
+        "en": "For micro-inverters behind an APsystems ECU gateway (ECU-B, ECU-R, ECU-C): the IP address of each ECU, separated by commas (port 8899 by default; type :502, e.g. 192.168.1.19:502, to read it over Modbus). Give it a fixed address in your router. Leave empty if you only have EZ1s.",
+        "fr": "Pour des micro-onduleurs derrière une passerelle APsystems ECU (ECU-B, ECU-R, ECU-C) : l'adresse IP de chaque ECU, séparées par des virgules (port 8899 par défaut ; ajoutez :502, ex. 192.168.1.19:502, pour le lire en Modbus). Donnez-lui une adresse fixe dans votre box. Laissez vide si vous n'avez que des EZ1."
       },
       "required": false,
       "placeholder": { "en": "192.168.1.60", "fr": "192.168.1.60" }

@@ -93,6 +93,27 @@ export const ECU = {
   /** The inverters assumed when the ECU says neither how many it knows nor lists them. */
   UNKNOWN_INVERTERS: 80,
   INDEX_SLACK_KWH: 0.5,
+  /**
+   * SunSpec Modbus TCP (src/ecu-sunspec.js), for an ECU whose port 8899 is
+   * closed: an address typed with this port is read over Modbus. Each
+   * request crosses the ECU's Zigbee link to one inverter (a few seconds,
+   * some lost): a timeout per request, retries, and units looked for once
+   * then every RESCAN (an inverter added in EMA Manager). The reading keeps
+   * the ECU pace above (one every `ecu_poll_interval`, the shared queue).
+   */
+  MODBUS: {
+    PORT: 502,
+    TIMEOUT: 5_000,
+    /** Tries per request on a timeout. */
+    RETRIES: 3,
+    /** Tries of the SunSpec marker of a unit not known yet. */
+    PROBE_TRIES: 2,
+    /** The highest unit id looked for (Modbus allows 247). */
+    MAX_UNIT: 64,
+    /** Units in a row that do not answer, past the known ones, to stop looking. */
+    MISSES_TO_STOP: 3,
+    RESCAN: 60 * 60_000,
+  },
 };
 
 /** Alarm ids (forever: values of the `alarm` field of inverter_alarm). */
