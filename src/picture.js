@@ -109,7 +109,7 @@ export function pictureSvg(f, { theme = 'dark', labels, phase = 0 } = {}) {
   const fillH = Math.max(4, 62 * level);
 
   // The diagram of the page (viewBox 640 x 430), scaled into the left part.
-  const diagram = `<g transform="translate(24 76) scale(1.32)">
+  const diagram = `<g transform="translate(-64 54) scale(1.452)">
 ${tracks}${moving}
 <g transform="translate(320 70)">
   <circle cx="62" cy="-34" r="16" fill="${c.sun}" opacity="0.9"/>
@@ -148,19 +148,19 @@ ${tracks}${moving}
     // The estimate kept by the flux-solaire service (the balance typed, + injected, - drawn).
     { label: 'CHARGE BATTERIE VIRTUELLE', value: L.battery, color: c.store },
   ];
-  const x = 900;
-  const w = 356;
-  const h = 88;
-  const gap = 14;
+  const x = 868;
+  const w = 392;
+  const h = 97;
+  const gap = 11;
   const top = (SIZE.height - (cards.length * h + (cards.length - 1) * gap)) / 2 + 14;
   const readings = cards
     .map((card, i) => {
       const y = top + i * (h + gap);
       return `<g transform="translate(${x} ${y})">
-  <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="${c.surface}"/>
+  <rect x="0" y="0" width="${w}" height="${h}" rx="15" fill="${c.surface}"/>
   <rect x="0" y="0" width="5" height="${h}" rx="2.5" fill="${card.color}"/>
-  <text x="26" y="31" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
-  <text x="26" y="71" font-family="${FONT.display}" font-size="36" fill="${c.ink}">${esc(card.value)}</text>
+  <text x="28" y="34" font-family="${FONT.mono}" font-size="16.5" letter-spacing="1.5" fill="${c.muted}">${esc(card.label)}</text>
+  <text x="28" y="78" font-family="${FONT.display}" font-size="40" fill="${c.ink}">${esc(card.value)}</text>
 </g>`;
     })
     .join('');

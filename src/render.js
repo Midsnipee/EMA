@@ -15,7 +15,7 @@ import { FRAMES, FRAME_MS, SIZE, pictureSvg } from './picture.js';
 const FONT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fonts');
 const MAX_BYTES = 300 * 1024;
 /** Rendered narrower than the drawing: sharp enough in a card, light to encode. */
-const WIDTH = 960;
+const WIDTH = 1056;
 
 const OPTIONS = {
   fitTo: { mode: 'width', value: WIDTH },
