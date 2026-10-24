@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync } from 'node:fs';
-import { Resvg } from '@resvg/resvg-js';
 import { validateWidgetContent, validateWidgetImage } from '@gladysassistant/integration-sdk';
-import { buildDevice, flowsOf, imageKeyOf, statesOf, svgOf, widgetContent } from '../src/flux.js';
+import { buildDevice, flowsOf, statesOf, widgetContent } from '../src/flux.js';
+import { labelsOf, periodsPerLoop, pictureKey } from '../src/picture.js';
+import { renderPicture } from '../src/render.js';
 
 const sample = {
   ok: true,
@@ -23,28 +23,34 @@ test('the flows of the real reading: 816 W produced, 600 W injected', () => {
 });
 
 test('the device and its states', () => {
-  const d = buildDevice('ext:x:house:main');
-  assert.equal(d.features.length, 7);
+  assert.equal(buildDevice('ext:x:house:main').features.length, 7);
   assert.equal(statesOf('ext:x:house:main', flowsOf(sample)).length, 7);
 });
 
-test('the widget content and image pass the core rules', () => {
+test('the labels and the key follow what the picture shows', () => {
   const f = flowsOf(sample);
-  const png = Buffer.from(new Resvg(svgOf(f), { fitTo: { mode: 'width', value: 800 } }).render().asPng());
-  writeFileSync(process.env.PREVIEW ?? '/tmp/flux-preview.png', png);
-  assert.deepEqual(validateWidgetImage(png.toString('base64')), []);
-  for (const created of [true, false]) {
-    const content = widgetContent({ flows: f, deviceId: 'ext:x:house:main', created, imageKey: imageKeyOf(f), pageUrl: 'https://flux.lan' });
-    assert.deepEqual(validateWidgetContent(content), []);
-  }
-  assert.deepEqual(validateWidgetContent(widgetContent({ flows: null, error: 'refused' })), []);
-  assert.notEqual(imageKeyOf(f), imageKeyOf(flowsOf({ ...sample, grid: { watts: 300 } })));
+  const now = new Date('2026-10-24T10:52:00Z');
+  const L = labelsOf(f, { now });
+  assert.deepEqual([L.sun, L.home, L.sb, L.bh, L.ecojoko, L.auto, L.time], ['816 W', '216 W', '600 W', '', '−600 W', '26 %', '12:52']);
+  assert.notEqual(pictureKey(f, 'dark', L), pictureKey(f, 'light', L));
+  assert.equal(periodsPerLoop(0), 0);
+  assert.ok(periodsPerLoop(3000) > periodsPerLoop(200));
 });
 
-test('the animated WebP passes the core image rules', async () => {
-  const { renderImage } = await import('../src/render.js');
-  const b64 = await renderImage(flowsOf(sample));
-  const bytes = Buffer.from(b64, 'base64');
-  assert.equal(bytes.toString('ascii', 12, 16), 'VP8X', 'an animated WebP, not the PNG fallback');
-  assert.deepEqual(validateWidgetImage(b64), []);
+test('the animated picture and the widget pass the core rules', async () => {
+  const f = flowsOf(sample);
+  for (const theme of ['dark', 'light']) {
+    const b64 = await renderPicture(f, { theme, labels: labelsOf(f) });
+    assert.equal(Buffer.from(b64, 'base64').toString('ascii', 12, 16), 'VP8X', 'animated WebP');
+    assert.deepEqual(validateWidgetImage(b64), []);
+  }
+  const still = flowsOf({ ...sample, production: { watts: 0 }, grid: { watts: 0 } });
+  assert.deepEqual(validateWidgetImage(await renderPicture(still, { theme: 'dark', labels: labelsOf(still) })), []);
+  for (const content of [
+    widgetContent({ flows: f, imageKey: 'flux-abc', pageUrl: 'https://flux.lan', error: 'timeout' }),
+    widgetContent({ flows: f, imageKey: 'flux-abc' }),
+    widgetContent({ flows: null, error: 'refused' }),
+  ]) {
+    assert.deepEqual(validateWidgetContent(content), []);
+  }
 });

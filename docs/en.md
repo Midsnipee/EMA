@@ -38,9 +38,7 @@ page.
 
 ## The widget
 
-Six live tiles, the picture of the flows (the arrows' width follows the
-watts; dots run along the arrows, faster as the power rises: an animated WebP image) and when
-the last readings were made.
+The diagram of the flux-solaire page: panels, house and virtual battery, dots running along the arrows (faster as the power rises), the values on the arrows, and on the right the four readings (production, consumption, Ecojoko, self-consumption) with the time of the last reading. It is an animated WebP image: set **Theme of the picture** (dark or light) in the widget settings to match the Gladys theme. On a PC, put the widget in a narrow dashboard column so it does not take the whole width.
 
 ## Troubleshooting
 
@@ -48,4 +46,3 @@ the last readings were made.
   container is stopped. Open the address in a browser.
 - **"le service n'arrive pas à lire Gladys"**: see the flux-solaire
   container logs (Gladys credentials, features not found).
-- **The tiles show "—"**: the device is not created yet (Discovery).

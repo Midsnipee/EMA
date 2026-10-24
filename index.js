@@ -5,16 +5,12 @@
 // -----------------------------------------------------------------------------
 
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
-import { renderImage } from './src/render.js';
-import {
-  WIDGET,
-  buildDevice,
-  flowsOf,
-  imageKeyOf,
-  statesOf,
-  svgOf,
-  widgetContent,
-} from './src/flux.js';
+import { renderPicture } from './src/render.js';
+import { labelsOf, pictureKey } from './src/picture.js';
+import { WIDGET, buildDevice, flowsOf, statesOf, widgetContent } from './src/flux.js';
+
+const TIME_ZONE = process.env.TZ || 'Europe/Paris';
+const themeOf = (settings) => (settings?.theme === 'light' ? 'light' : 'dark');
 
 const gladys = new GladysIntegration();
 const DEVICE = gladys.externalIds('house', 'main').device;
@@ -37,19 +33,21 @@ function normalize(raw = {}) {
   };
 }
 
-/** The animated picture of the flows, rendered once per key (a new key when the drawing changes). */
-function render(flows) {
-  const key = imageKeyOf(flows);
+/** The picture of the flows for a theme, rendered once per key (the key follows what it shows). */
+function render(flows, theme) {
+  const labels = labelsOf(flows, { now: new Date(), timeZone: TIME_ZONE });
+  const key = pictureKey(flows, theme, labels);
   if (!state.images.has(key)) {
     state.images.set(
       key,
-      renderImage(flows).catch((err) => {
+      renderPicture(flows, { theme, labels }).catch((err) => {
         state.images.delete(key);
+        logger.warn(`picture: ${err.message}`);
         throw err;
       }),
     );
     // The core caches an image an hour by key: keep only the recent ones here.
-    while (state.images.size > 20) {
+    while (state.images.size > 12) {
       state.images.delete(state.images.keys().next().value);
     }
   }
@@ -79,7 +77,7 @@ async function poll() {
     if (!data.ok) {
       throw new Error(`le service n'arrive pas à lire Gladys (${data.error})`);
     }
-    const before = state.flows ? imageKeyOf(state.flows) : null;
+    const before = state.flows ? JSON.stringify(state.flows) : null;
     state.flows = flowsOf(data);
     state.error = null;
     if (state.created) {
@@ -89,9 +87,8 @@ async function poll() {
       en: `Production ${state.flows.production} W, house ${state.flows.consumption} W.`,
       fr: `Production ${state.flows.production} W, maison ${state.flows.consumption} W.`,
     });
-    if (before !== imageKeyOf(state.flows)) {
-      // Rendered before the nudge: the widget asks for the image right after.
-      await state.images.get(render(state.flows)).catch((e) => logger.warn(`image: ${e.message}`));
+    if (before !== JSON.stringify(state.flows)) {
+      // The open widgets pull a new content, whose picture is rendered then.
       gladys.requestWidgetRefresh(WIDGET);
     }
   } catch (err) {
@@ -133,18 +130,24 @@ gladys.onDeviceCreated(async () => {
   }
 });
 gladys.onDeviceDeleted(() => refreshCreated());
-gladys.onWidgetGet(WIDGET, () =>
-  widgetContent({
+gladys.onWidgetGet(WIDGET, async ({ settings }) => {
+  let imageKey;
+  if (state.flows) {
+    imageKey = render(state.flows, themeOf(settings));
+    // Rendered before answering: the core asks for the image right after the content.
+    await state.images.get(imageKey).catch(() => {
+      imageKey = undefined;
+    });
+  }
+  return widgetContent({
     flows: state.flows,
-    deviceId: DEVICE,
-    created: state.created,
-    imageKey: state.flows ? render(state.flows) : undefined,
+    imageKey,
     pageUrl: state.config.page_url,
     error: state.error,
-  }),
-);
+  });
+});
 gladys.onWidgetGetImage(async (key) => {
-  const image = state.images.get(key) ?? (state.flows ? state.images.get(render(state.flows)) : undefined);
+  const image = state.images.get(key);
   if (!image) {
     throw new Error(`unknown image ${key}`);
   }

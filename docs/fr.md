@@ -38,9 +38,7 @@ depuis la page du service.
 
 ## Le widget
 
-Six tuiles en direct, le schéma des flux (l'épaisseur des flèches suit les
-watts ; des points défilent le long des flèches, plus vite quand la puissance monte : une image WebP animée) et
-l'heure des dernières lectures.
+Le schéma de la page flux-solaire : panneaux, maison et batterie virtuelle, des points qui défilent le long des flèches (plus vite quand la puissance monte), les valeurs sur les flèches, et à droite les quatre mesures (production, consommation, Ecojoko, autoconsommation) avec l'heure de la dernière lecture. C'est une image WebP animée : réglage **Thème du schéma** (sombre ou clair) dans les paramètres du widget, à accorder au thème de Gladys. Sur PC, placez le widget dans une colonne étroite du tableau de bord pour qu'il ne prenne pas toute la largeur.
 
 ## Dépannage
 
@@ -48,5 +46,3 @@ l'heure des dernières lectures.
   conteneur est arrêté. Ouvrez l'adresse dans un navigateur.
 - **« le service n'arrive pas à lire Gladys »** : voir les journaux du
   conteneur flux-solaire (identifiants Gladys, fonctionnalités introuvables).
-- **Les tuiles affichent « — »** : l'appareil n'est pas encore créé
-  (Découverte).
