@@ -31,7 +31,8 @@ test('the labels and the key follow what the picture shows', () => {
   const f = flowsOf(sample);
   const now = new Date('2026-10-24T10:52:00Z');
   const L = labelsOf(f, { now });
-  assert.deepEqual([L.sun, L.home, L.sb, L.bh, L.ecojoko, L.auto, L.time], ['816 W', '216 W', '600 W', '', '−600 W', '26 %', '12:52']);
+  assert.deepEqual([L.sun, L.home, L.sb, L.bh, L.ecojoko, L.auto, L.time], ['816 W', '216 W', '600 W', '', '600 W', '26 %', '12:52']);
+  assert.equal(L.ecojokoLabel, 'INJECTION URBAN SOLAR');
   assert.notEqual(pictureKey(f, 'dark', L), pictureKey(f, 'light', L));
   assert.equal(periodsPerLoop(0), 0);
   assert.ok(periodsPerLoop(3000) > periodsPerLoop(200));

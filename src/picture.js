@@ -74,8 +74,9 @@ export function labelsOf(f, { now = new Date(), timeZone = 'Europe/Paris' } = {}
     bh: f.discharge >= 5 ? fmtW(f.discharge) : '',
     production: fmtW(f.production),
     consumption: fmtW(f.consumption),
-    ecojoko: `${grid >= 0 ? '+' : '−'}${fmtW(Math.abs(grid))}`,
-    ecojokoHint: grid >= 0 ? 'soutirage du réseau' : 'injection vers Urban Solar',
+    // No sign: the label says which way the power goes.
+    ecojoko: fmtW(Math.abs(grid)),
+    ecojokoLabel: grid > 0 ? 'SOUTIRAGE URBAN SOLAR' : 'INJECTION URBAN SOLAR',
     auto: f.selfConsumption === null ? '—' : `${f.selfConsumption} %`,
     time: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone }),
   };
@@ -140,15 +141,15 @@ ${tracks}${moving}
 
   // The four readings of the page, stacked on the right.
   const cards = [
-    { label: 'PRODUCTION', value: L.production, hint: 'somme des 9 DS3', color: c.sun },
-    { label: 'CONSOMMATION', value: L.consumption, hint: 'production + Ecojoko', color: c.home },
-    { label: 'ECOJOKO', value: L.ecojoko, hint: L.ecojokoHint, color: c.grid },
-    { label: 'AUTOCONSOMMATION', value: L.auto, hint: 'part de la production gardée', color: c.store },
+    { label: 'PRODUCTION', value: L.production, color: c.sun },
+    { label: 'CONSOMMATION', value: L.consumption, color: c.home },
+    { label: L.ecojokoLabel, value: L.ecojoko, color: c.grid },
+    { label: 'AUTOCONSOMMATION', value: L.auto, color: c.store },
   ];
   const x = 900;
   const w = 356;
-  const h = 132;
-  const gap = 18;
+  const h = 112;
+  const gap = 22;
   const top = (SIZE.height - (cards.length * h + (cards.length - 1) * gap)) / 2 + 14;
   const readings = cards
     .map((card, i) => {
@@ -156,9 +157,8 @@ ${tracks}${moving}
       return `<g transform="translate(${x} ${y})">
   <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="${c.surface}"/>
   <rect x="0" y="0" width="5" height="${h}" rx="2.5" fill="${card.color}"/>
-  <text x="26" y="34" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${card.label}</text>
-  <text x="26" y="82" font-family="${FONT.display}" font-size="40" fill="${c.ink}">${esc(card.value)}</text>
-  <text x="26" y="112" font-family="${FONT.body}" font-size="17" fill="${c.muted}">${esc(card.hint)}</text>
+  <text x="26" y="38" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
+  <text x="26" y="88" font-family="${FONT.display}" font-size="42" fill="${c.ink}">${esc(card.value)}</text>
 </g>`;
     })
     .join('');
