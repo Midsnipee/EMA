@@ -1,0 +1,82 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Flux solaire",
+  "description": {
+    "en": "Solar flows of the house: panels, house, Urban Solar virtual battery, on the dashboard.",
+    "fr": "Flux solaires de la maison : panneaux, maison, batterie virtuelle Urban Solar, au tableau de bord."
+  },
+  "version": "0.1.0",
+  "docker_image": "ghcr.io/midsnipee/ema:flux-integration",
+  "gladys_version": ">=5.1.0",
+  "categories": ["energy"],
+  "transports": ["local"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "Solar flows", "fr": "Flux solaires" },
+      "description": {
+        "en": "Reads the flux-solaire service running in your house (a container on your NAS, which combines the APsystems ECU production and the Ecojoko grid power). One device with the production, the house consumption, the power injected to and drawn from the Urban Solar virtual battery, its estimated balance and the self-consumption, and a dashboard widget with the picture of the flows.",
+        "fr": "Lit le service flux-solaire de la maison (un conteneur sur votre NAS, qui combine la production de l'ECU APsystems et la puissance Ecojoko). Un appareil avec la production, la consommation de la maison, l'injection vers la batterie virtuelle Urban Solar et le soutirage, son solde estimé et l'autoconsommation, et un widget avec le schéma des flux."
+      }
+    },
+    {
+      "key": "service_url",
+      "type": "string",
+      "label": { "en": "flux-solaire service address", "fr": "Adresse du service flux-solaire" },
+      "description": {
+        "en": "The address of the container, e.g. http://192.168.1.20:8085.",
+        "fr": "L'adresse du conteneur, par exemple http://192.168.1.20:8085."
+      },
+      "required": true,
+      "placeholder": { "en": "http://192.168.1.20:8085", "fr": "http://192.168.1.20:8085" }
+    },
+    {
+      "key": "page_url",
+      "type": "string",
+      "label": { "en": "Animated page (https, optional)", "fr": "Page animée (https, facultatif)" },
+      "description": {
+        "en": "Shows a \"See the animation\" button in the widget. Gladys only opens https links: leave empty if the page is plain http.",
+        "fr": "Affiche un bouton « Voir l'animation » dans le widget. Gladys n'ouvre que des liens https : laissez vide si la page est en http simple."
+      },
+      "required": false
+    },
+    {
+      "key": "poll_interval",
+      "type": "number",
+      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de lecture (s)" },
+      "description": {
+        "en": "How often the service is read. Ecojoko moves every 30 s, the ECU every 5 minutes.",
+        "fr": "Fréquence de lecture du service. Ecojoko bouge toutes les 30 s, l'ECU toutes les 5 minutes."
+      },
+      "required": false,
+      "default": 15,
+      "min": 10,
+      "max": 300
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "timeout_seconds": 20,
+      "label": { "en": "Test the service", "fr": "Tester le service" },
+      "description": {
+        "en": "Reads the flux-solaire service now and shows the flows.",
+        "fr": "Lit le service flux-solaire maintenant et affiche les flux."
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "key": "flux",
+      "label": { "en": "Solar flows", "fr": "Flux solaire" },
+      "description": {
+        "en": "Panels, house and Urban Solar virtual battery: the flows and their figures.",
+        "fr": "Panneaux, maison et batterie virtuelle Urban Solar : les flux et leurs valeurs."
+      },
+      "icon": "sun",
+      "settings": []
+    }
+  ]
+}

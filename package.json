@@ -1,0 +1,20 @@
+{
+  "name": "gladys-flux-solaire",
+  "version": "0.1.0",
+  "description": "Solar flows of the house (panels, house, Urban Solar virtual battery) for Gladys.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@gladysassistant/integration-sdk": "^0.15.0",
+    "@resvg/resvg-js": "^2.6.2"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
+}
