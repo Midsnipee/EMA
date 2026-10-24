@@ -145,11 +145,13 @@ ${tracks}${moving}
     { label: 'INJECTION URBAN SOLAR', value: L.injection, color: c.grid },
     { label: 'CONSOMMATION SUR BATTERIE', value: L.fromBattery, color: c.store },
     { label: 'AUTOCONSOMMATION', value: L.auto, color: c.home },
+    // The estimate kept by the flux-solaire service (the balance typed, + injected, - drawn).
+    { label: 'CHARGE BATTERIE VIRTUELLE', value: L.battery, color: c.store },
   ];
   const x = 900;
   const w = 356;
-  const h = 100;
-  const gap = 16;
+  const h = 88;
+  const gap = 14;
   const top = (SIZE.height - (cards.length * h + (cards.length - 1) * gap)) / 2 + 14;
   const readings = cards
     .map((card, i) => {
@@ -157,8 +159,8 @@ ${tracks}${moving}
       return `<g transform="translate(${x} ${y})">
   <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="${c.surface}"/>
   <rect x="0" y="0" width="5" height="${h}" rx="2.5" fill="${card.color}"/>
-  <text x="26" y="34" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
-  <text x="26" y="80" font-family="${FONT.display}" font-size="40" fill="${c.ink}">${esc(card.value)}</text>
+  <text x="26" y="31" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
+  <text x="26" y="71" font-family="${FONT.display}" font-size="36" fill="${c.ink}">${esc(card.value)}</text>
 </g>`;
     })
     .join('');
