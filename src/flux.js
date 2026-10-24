@@ -101,7 +101,7 @@ export function statesOf(deviceId, f) {
  * link to the animated page when it has an https address (Gladys opens
  * nothing else). The figures also live on the device, for scenes and charts.
  */
-export function widgetContent({ flows, imageKey, pageUrl, error }) {
+export function widgetContent({ flows, imageKey, pageUrl, error, preparing = false }) {
   if (!flows || !imageKey) {
     return {
       ttl_seconds: 30,
@@ -111,7 +111,9 @@ export function widgetContent({ flows, imageKey, pageUrl, error }) {
           variant: 'body',
           text: error
             ? `Le service flux-solaire ne répond pas : ${error}`
-            : 'En attente de la première lecture du service flux-solaire.',
+            : preparing
+              ? 'Préparation du schéma…'
+              : 'En attente de la première lecture du service flux-solaire.',
         },
       ],
     };

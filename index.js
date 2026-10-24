@@ -20,7 +20,11 @@ const state = {
   flows: null,
   error: null,
   timer: null,
-  images: new Map(), // key -> Promise of the base64 animated WebP, the last few
+  images: new Map(), // key -> base64 picture, finished ones only, the last few
+  ready: new Map(), // theme -> key of its last finished picture
+  themes: new Set(['dark']), // the themes the widgets asked for
+  rendering: Promise.resolve(), // one render at a time: it is CPU work on the Gladys host
+  pending: new Map(), // theme -> key being rendered
   created: false,
 };
 
@@ -33,25 +37,45 @@ function normalize(raw = {}) {
   };
 }
 
-/** The picture of the flows for a theme, rendered once per key (the key follows what it shows). */
-function render(flows, theme) {
+/**
+ * Render the picture of the current flows for a theme, in the background,
+ * one render at a time. The widget never waits for it: it shows the last
+ * finished picture, and is nudged once the new one is ready.
+ */
+function scheduleRender(theme) {
+  if (!state.flows) {
+    return Promise.resolve();
+  }
+  const flows = state.flows;
   const labels = labelsOf(flows, { now: new Date(), timeZone: TIME_ZONE });
   const key = pictureKey(flows, theme, labels);
-  if (!state.images.has(key)) {
-    state.images.set(
-      key,
-      renderPicture(flows, { theme, labels }).catch((err) => {
-        state.images.delete(key);
-        logger.warn(`picture: ${err.message}`);
-        throw err;
-      }),
-    );
-    // The core caches an image an hour by key: keep only the recent ones here.
-    while (state.images.size > 12) {
-      state.images.delete(state.images.keys().next().value);
-    }
+  if (state.ready.get(theme) === key || state.pending.get(theme) === key) {
+    return state.rendering;
   }
-  return key;
+  state.pending.set(theme, key);
+  state.rendering = state.rendering.then(async () => {
+    const started = Date.now();
+    try {
+      state.images.set(key, await renderPicture(flows, { theme, labels }));
+      // The core caches an image an hour by key: keep only the recent ones here.
+      while (state.images.size > 12) {
+        state.images.delete(state.images.keys().next().value);
+      }
+      state.ready.set(theme, key);
+      const ms = Date.now() - started;
+      if (ms > 5000) {
+        logger.warn(`picture (${theme}) took ${ms} ms`);
+      }
+      gladys.requestWidgetRefresh(WIDGET);
+    } catch (err) {
+      logger.warn(`picture (${theme}): ${err.message}`);
+    } finally {
+      if (state.pending.get(theme) === key) {
+        state.pending.delete(theme);
+      }
+    }
+  });
+  return state.rendering;
 }
 
 async function refreshCreated() {
@@ -88,8 +112,10 @@ async function poll() {
       fr: `Production ${state.flows.production} W, maison ${state.flows.consumption} W.`,
     });
     if (before !== JSON.stringify(state.flows)) {
-      // The open widgets pull a new content, whose picture is rendered then.
-      gladys.requestWidgetRefresh(WIDGET);
+      // New pictures in the background; the widgets are nudged when they are ready.
+      for (const theme of state.themes) {
+        scheduleRender(theme);
+      }
     }
   } catch (err) {
     const message = err.name === 'TimeoutError' ? 'pas de réponse en 8 s' : err.message;
@@ -131,19 +157,21 @@ gladys.onDeviceCreated(async () => {
 });
 gladys.onDeviceDeleted(() => refreshCreated());
 gladys.onWidgetGet(WIDGET, async ({ settings }) => {
-  let imageKey;
-  if (state.flows) {
-    imageKey = render(state.flows, themeOf(settings));
-    // Rendered before answering: the core asks for the image right after the content.
-    await state.images.get(imageKey).catch(() => {
-      imageKey = undefined;
-    });
+  const theme = themeOf(settings);
+  state.themes.add(theme);
+  if (state.flows && !state.ready.has(theme)) {
+    // First picture of this theme: wait a little, never up to the core's deadline.
+    await Promise.race([scheduleRender(theme), new Promise((r) => setTimeout(r, 4000))]);
+  } else {
+    scheduleRender(theme);
   }
+  const imageKey = state.ready.get(theme);
   return widgetContent({
     flows: state.flows,
-    imageKey,
+    imageKey: imageKey && state.images.has(imageKey) ? imageKey : undefined,
     pageUrl: state.config.page_url,
     error: state.error,
+    preparing: Boolean(state.flows),
   });
 });
 gladys.onWidgetGetImage(async (key) => {
