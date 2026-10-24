@@ -29,7 +29,9 @@ vous, `GRID_SIGN=-1`.
 
 ## API
 
-- `GET /api/flow` : les dernières valeurs et le solde estimé.
+- `GET /api/flow` : les dernières valeurs, le solde estimé et les totaux du jour
+  (`today.injectedKwh` envoyé vers la batterie virtuelle, `today.drawnKwh` pris
+  dessus), remis à zéro à minuit (fuseau `TZ`).
 - `POST /api/battery` `{"kwh": 123.4}` : corrige le solde.
 - `GET /api/features` : aide à la configuration.
 

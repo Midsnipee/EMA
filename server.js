@@ -113,12 +113,24 @@ function pickGrid(features) {
 
 const batteryFile = () => join(CONFIG.dataDir, 'battery.json');
 const battery = { kwh: CONFIG.batteryStartKwh, setAt: null, lastAt: null, lastGridW: null };
+/** Energy of the day (local day of TZ): injected to and drawn from the virtual battery. */
+const today = { date: null, injectedKwh: 0, drawnKwh: 0 };
+const TIME_ZONE = env('TZ', 'Europe/Paris');
+const localDate = (at) => new Date(at).toLocaleDateString('sv-SE', { timeZone: TIME_ZONE });
 
 async function loadBattery() {
   try {
     const saved = JSON.parse(await readFile(batteryFile(), 'utf8'));
     if (Number.isFinite(saved.kwh)) {
       Object.assign(battery, { kwh: saved.kwh, setAt: saved.setAt ?? null });
+    }
+    // The day's totals survive a restart of the container on the same day.
+    if (saved.today?.date === localDate(Date.now())) {
+      Object.assign(today, {
+        date: saved.today.date,
+        injectedKwh: Number(saved.today.injectedKwh) || 0,
+        drawnKwh: Number(saved.today.drawnKwh) || 0,
+      });
     }
   } catch {
     // First start: the configured starting balance.
@@ -129,7 +141,7 @@ async function saveBattery() {
   try {
     await mkdir(CONFIG.dataDir, { recursive: true });
     const tmp = `${batteryFile()}.tmp`;
-    await writeFile(tmp, JSON.stringify({ kwh: battery.kwh, setAt: battery.setAt }));
+    await writeFile(tmp, JSON.stringify({ kwh: battery.kwh, setAt: battery.setAt, today }));
     await rename(tmp, batteryFile());
   } catch (err) {
     log('cannot save the battery estimate:', err.message);
@@ -144,6 +156,16 @@ function integrateBattery(gridW, at) {
     if (hours > 0 && hours < 1 / 6) {
       const mean = (gridW + battery.lastGridW) / 2;
       battery.kwh = Math.max(0, battery.kwh - (mean * hours) / 1000);
+      // The interval counts for the day it ends in: a new day starts from 0.
+      const day = localDate(at);
+      if (today.date !== day) {
+        Object.assign(today, { date: day, injectedKwh: 0, drawnKwh: 0 });
+      }
+      if (mean < 0) {
+        today.injectedKwh += (-mean * hours) / 1000;
+      } else {
+        today.drawnKwh += (mean * hours) / 1000;
+      }
     }
   }
   battery.lastAt = at;
@@ -230,6 +252,12 @@ const server = createServer(async (req, res) => {
       return send(res, 200, {
         ...latest,
         battery: { kwh: Number(battery.kwh.toFixed(3)), setAt: battery.setAt },
+        today: {
+          // Read at midnight before a new reading: the new day is still at 0.
+          date: localDate(Date.now()),
+          injectedKwh: today.date === localDate(Date.now()) ? Number(today.injectedKwh.toFixed(3)) : 0,
+          drawnKwh: today.date === localDate(Date.now()) ? Number(today.drawnKwh.toFixed(3)) : 0,
+        },
         pollSeconds: CONFIG.pollSeconds,
       });
     }
