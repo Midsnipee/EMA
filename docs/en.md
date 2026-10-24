@@ -39,7 +39,7 @@ page.
 ## The widget
 
 Six live tiles, the picture of the flows (the arrows' width follows the
-watts; the picture is not animated, Gladys only shows still images) and when
+watts; dots run along the arrows, faster as the power rises: an animated WebP image) and when
 the last readings were made.
 
 ## Troubleshooting

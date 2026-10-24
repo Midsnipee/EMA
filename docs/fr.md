@@ -39,7 +39,7 @@ depuis la page du service.
 ## Le widget
 
 Six tuiles en direct, le schéma des flux (l'épaisseur des flèches suit les
-watts ; le schéma n'est pas animé, Gladys n'affiche que des images fixes) et
+watts ; des points défilent le long des flèches, plus vite quand la puissance monte : une image WebP animée) et
 l'heure des dernières lectures.
 
 ## Dépannage

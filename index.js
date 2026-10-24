@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------------
 
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
-import { Resvg } from '@resvg/resvg-js';
+import { renderImage } from './src/render.js';
 import {
   WIDGET,
   buildDevice,
@@ -24,7 +24,7 @@ const state = {
   flows: null,
   error: null,
   timer: null,
-  images: new Map(), // key -> base64 PNG, the last few
+  images: new Map(), // key -> Promise of the base64 animated WebP, the last few
   created: false,
 };
 
@@ -37,11 +37,17 @@ function normalize(raw = {}) {
   };
 }
 
+/** The animated picture of the flows, rendered once per key (a new key when the drawing changes). */
 function render(flows) {
   const key = imageKeyOf(flows);
   if (!state.images.has(key)) {
-    const png = new Resvg(svgOf(flows), { fitTo: { mode: 'width', value: 800 } }).render().asPng();
-    state.images.set(key, Buffer.from(png).toString('base64'));
+    state.images.set(
+      key,
+      renderImage(flows).catch((err) => {
+        state.images.delete(key);
+        throw err;
+      }),
+    );
     // The core caches an image an hour by key: keep only the recent ones here.
     while (state.images.size > 20) {
       state.images.delete(state.images.keys().next().value);
@@ -84,6 +90,8 @@ async function poll() {
       fr: `Production ${state.flows.production} W, maison ${state.flows.consumption} W.`,
     });
     if (before !== imageKeyOf(state.flows)) {
+      // Rendered before the nudge: the widget asks for the image right after.
+      await state.images.get(render(state.flows)).catch((e) => logger.warn(`image: ${e.message}`));
       gladys.requestWidgetRefresh(WIDGET);
     }
   } catch (err) {
@@ -135,7 +143,7 @@ gladys.onWidgetGet(WIDGET, () =>
     error: state.error,
   }),
 );
-gladys.onWidgetGetImage((key) => {
+gladys.onWidgetGetImage(async (key) => {
   const image = state.images.get(key) ?? (state.flows ? state.images.get(render(state.flows)) : undefined);
   if (!image) {
     throw new Error(`unknown image ${key}`);

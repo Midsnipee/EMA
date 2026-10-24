@@ -10,7 +10,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@gladysassistant/integration-sdk": "^0.15.0",
-    "@resvg/resvg-js": "^2.6.2"
+    "@resvg/resvg-js": "^2.6.2",
+    "sharp": "^0.34.4"
   },
   "private": true,
   "type": "module",

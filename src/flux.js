@@ -110,23 +110,35 @@ export function imageKeyOf(f) {
 
 const COLORS = { sun: '#e39b2d', home: '#22a08a', store: '#8a6ce0', track: '#8a96a5' };
 
-function arrow(d, w, color, id) {
+/** Dash pattern of the moving dots: one period, in px. */
+export const DASH = 30;
+/** Loop periods per animation cycle: more watts, faster dots (whole numbers keep the loop seamless). */
+const speed = (w) => (w < 5 ? 0 : w < 400 ? 1 : w < 1500 ? 2 : 3);
+
+function arrow(d, w, color, id, phase, watts) {
   if (w <= 0) {
     return `<path d="${d}" fill="none" stroke="${COLORS.track}" stroke-opacity="0.35" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 14"/>`;
   }
-  return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" marker-end="url(#${id})"/>`;
+  const base = `<path d="${d}" fill="none" stroke="${color}" stroke-opacity="${phase === null ? 1 : 0.45}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" marker-end="url(#${id})"/>`;
+  if (phase === null) {
+    return base;
+  }
+  // Moving dots along the arrow: the dash offset walks one period per loop step.
+  const offset = -(phase * DASH * speed(watts)).toFixed(2);
+  const dot = Math.max(11, w * 1.5).toFixed(1);
+  return `${base}<path d="${d}" fill="none" stroke="${color}" stroke-width="${dot}" stroke-linecap="round" stroke-dasharray="0.1 ${DASH - 0.1}" stroke-dashoffset="${offset}"/>`;
 }
 
 /** The flows as an 800 x 450 SVG (16:9, the widget's frame), transparent, no text. */
-export function svgOf(f) {
+export function svgOf(f, phase = null) {
   const w = { sh: width(f.solarToHome), sb: width(f.charge), bh: width(f.discharge) };
   const marker = (id, color) =>
     `<marker id="${id}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3" markerHeight="3" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="${color}"/></marker>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
 <defs>${marker('a-sun', COLORS.sun)}${marker('a-store', COLORS.store)}</defs>
-${arrow('M360 150 C 290 220, 230 260, 205 300', w.sh, COLORS.sun, 'a-sun')}
-${arrow('M440 150 C 510 220, 570 260, 595 300', w.sb, COLORS.sun, 'a-sun')}
-${arrow('M540 375 L 270 375', w.bh, COLORS.store, 'a-store')}
+${arrow('M360 150 C 290 220, 230 260, 205 300', w.sh, COLORS.sun, 'a-sun', phase, f.solarToHome)}
+${arrow('M440 150 C 510 220, 570 260, 595 300', w.sb, COLORS.sun, 'a-sun', phase, f.charge)}
+${arrow('M540 375 L 270 375', w.bh, COLORS.store, 'a-store', phase, f.discharge)}
 <g transform="translate(400 85)">
   <circle cx="92" cy="-40" r="24" fill="${COLORS.sun}"/>
   <path d="M-86 40 L-60 -36 L60 -36 L86 40 Z" fill="${COLORS.sun}" fill-opacity="0.15" stroke="${COLORS.sun}" stroke-width="5" stroke-linejoin="round"/>
