@@ -1,0 +1,11 @@
+{
+  "name": "flux-solaire",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Animated solar energy flows (panels, house, Urban Solar virtual battery) from Gladys: APsystems ECU production and Ecojoko grid power.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=22" },
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,17 @@
+services:
+  flux-solaire:
+    image: ghcr.io/midsnipee/ema:flux-solaire
+    container_name: flux-solaire
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      GLADYS_URL: "http://192.168.1.XX"   # l'adresse de Gladys (avec :port si ce n'est pas 80)
+      GLADYS_EMAIL: "flux@maison.local"   # un compte Gladys dédié
+      GLADYS_PASSWORD: "change-moi"
+      BATTERY_START_KWH: "0"              # solde Urban Solar au premier démarrage
+      # PRODUCTION_FEATURE: ""            # sélecteur, si la détection auto se trompe
+      # GRID_FEATURE: ""
+      TZ: "Europe/Paris"
+    volumes:
+      - ./data:/data

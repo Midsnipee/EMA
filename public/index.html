@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flux solaire de la maison</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one energy-flow diagram as the hero, a row of live readings under it, controls of the simulation last. */
+:root {
+  --bg: #eef2f6;
+  --surface: #ffffff;
+  --ink: #172230;
+  --muted: #5b6878;
+  --line: #d5dde6;
+  --sun: #d98a12;
+  --home: #1f8a78;
+  --store: #6a4fc9;
+  --grid: #8a96a5;
+  --track: #dfe5ec;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1620; --surface: #17212d; --ink: #e8eef5; --muted: #9aa8b8; --line: #2a3747;
+    --sun: #f2b544; --home: #3cc4aa; --store: #9b84f0; --grid: #6f7c8c; --track: #243142;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1620; --surface: #17212d; --ink: #e8eef5; --muted: #9aa8b8; --line: #2a3747;
+  --sun: #f2b544; --home: #3cc4aa; --store: #9b84f0; --grid: #6f7c8c; --track: #243142;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+.wrap { max-width: 880px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font: 700 clamp(26px, 5vw, 34px)/1.1 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.clock { font: 500 22px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.tag { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 8px; }
+svg.flow { display: block; width: 100%; height: auto; max-width: 100%; }
+.node-label { font: 600 15px var(--display); fill: var(--ink); }
+.node-value { font: 500 14px var(--mono); fill: var(--muted); font-variant-numeric: tabular-nums; }
+.flow-value { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
+.readings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .readings { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.reading { display: grid; gap: 2px; padding: 12px 14px; border-left: 3px solid var(--c, var(--line)); background: var(--surface); border-radius: 0 10px 10px 0; min-width: 0; }
+.reading span { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.reading strong { font: 700 24px var(--display); font-variant-numeric: tabular-nums; }
+.reading small { color: var(--muted); font-size: 12px; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 24px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl label { font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+.ctl output { font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--sun); }
+input[type=number] { width: 100%; font: 500 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+button { font: 500 14px var(--body); border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+.note { color: var(--muted); font-size: 13px; max-width: 70ch; margin: 0; }
+
+.status { display: flex; align-items: center; gap: 8px; font: 500 13px var(--mono); color: var(--muted); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--grid); }
+.status[data-state="ok"] .dot { background: var(--home); }
+.status[data-state="stale"] .dot { background: var(--sun); }
+.status[data-state="error"] .dot { background: #d14b4b; }
+.battery-edit { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+.battery-edit .ctl { flex: 1 1 200px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:grid;gap:6px">
+      <h1>Flux solaire de la maison</h1>
+      <div class="status" id="status" data-state="wait"><span class="dot"></span><span id="status-text">Connexion à Gladys…</span></div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="stage">
+    <svg class="flow" viewBox="0 0 640 430" role="img" aria-labelledby="flowDesc">
+      <desc id="flowDesc">Schéma : les panneaux solaires alimentent la maison et la batterie virtuelle Urban Solar ; la batterie virtuelle alimente la maison quand la production ne suffit pas.</desc>
+      <!-- Tracks -->
+      <path id="t-sh" d="M290 128 C 230 190, 170 230, 150 290" fill="none" stroke="var(--track)" stroke-width="12" stroke-linecap="round"/>
+      <path id="t-sb" d="M350 128 C 410 190, 470 230, 490 290" fill="none" stroke="var(--track)" stroke-width="12" stroke-linecap="round"/>
+      <path id="t-bh" d="M440 352 L 200 352" fill="none" stroke="var(--track)" stroke-width="12" stroke-linecap="round"/>
+      <!-- Animated flows -->
+      <path id="f-sh" d="M290 128 C 230 190, 170 230, 150 290" fill="none" stroke="var(--sun)" stroke-linecap="round" stroke-dasharray="2 16"/>
+      <path id="f-sb" d="M350 128 C 410 190, 470 230, 490 290" fill="none" stroke="var(--sun)" stroke-linecap="round" stroke-dasharray="2 16"/>
+      <path id="f-bh" d="M440 352 L 200 352" fill="none" stroke="var(--store)" stroke-linecap="round" stroke-dasharray="2 16"/>
+
+      <!-- Solar panel -->
+      <g transform="translate(320 70)">
+        <circle cx="62" cy="-34" r="16" fill="var(--sun)" opacity="0.9"/>
+        <g fill="var(--surface)" stroke="var(--sun)" stroke-width="3" stroke-linejoin="round">
+          <path d="M-58 22 L-40 -26 L40 -26 L58 22 Z"/>
+        </g>
+        <g stroke="var(--sun)" stroke-width="2">
+          <line x1="-13" y1="-26" x2="-19" y2="22"/><line x1="13" y1="-26" x2="19" y2="22"/>
+          <line x1="-49" y1="-2" x2="49" y2="-2"/>
+        </g>
+        <line x1="0" y1="22" x2="0" y2="40" stroke="var(--sun)" stroke-width="3"/>
+        <text class="node-label" x="0" y="-44" text-anchor="middle">Panneaux · 9 DS3</text>
+        <text class="node-value" id="v-sun" x="0" y="62" text-anchor="middle">0 W</text>
+      </g>
+
+      <!-- House -->
+      <g transform="translate(140 330)">
+        <path d="M-46 4 L0 -36 L46 4 L46 46 L-46 46 Z" fill="var(--surface)" stroke="var(--home)" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="-12" y="18" width="24" height="28" fill="var(--home)" opacity="0.85"/>
+        <text class="node-label" x="0" y="74" text-anchor="middle">Maison</text>
+        <text class="node-value" id="v-home" x="0" y="94" text-anchor="middle">0 W</text>
+      </g>
+
+      <!-- Virtual battery -->
+      <g transform="translate(500 330)">
+        <rect x="-40" y="-30" width="80" height="76" rx="10" fill="var(--surface)" stroke="var(--store)" stroke-width="3"/>
+        <rect x="-14" y="-40" width="28" height="10" rx="3" fill="var(--store)"/>
+        <rect id="b-fill" x="-30" y="36" width="60" height="0" rx="4" fill="var(--store)" opacity="0.8"/>
+        <path d="M-6 -12 L-14 10 L0 10 L-6 32 L14 2 L0 2 L6 -12 Z" fill="var(--surface)" stroke="var(--store)" stroke-width="2" stroke-linejoin="round"/>
+        <text class="node-label" x="0" y="74" text-anchor="middle">Batterie virtuelle</text>
+        <text class="node-value" x="0" y="94" text-anchor="middle">Urban Solar · <tspan id="v-bat">0,0 kWh</tspan></text>
+      </g>
+
+      <!-- Flow labels -->
+      <text class="flow-value" id="l-sh" x="168" y="196" text-anchor="end" fill="var(--sun)">0 W</text>
+      <text class="flow-value" id="l-sb" x="472" y="196" fill="var(--sun)">0 W</text>
+      <text class="flow-value" id="l-bh" x="320" y="340" text-anchor="middle" fill="var(--store)">0 W</text>
+    </svg>
+  </div>
+
+  <section class="readings" aria-label="Mesures">
+    <div class="reading" style="--c: var(--sun)"><span>Production</span><strong id="r-prod">0 W</strong><small>somme des 9 DS3 (ECU Modbus)</small></div>
+    <div class="reading" style="--c: var(--home)"><span>Consommation</span><strong id="r-cons">0 W</strong><small>production + Ecojoko</small></div>
+    <div class="reading" style="--c: var(--grid)"><span>Ecojoko</span><strong id="r-eco">0 W</strong><small id="r-eco-hint">+ soutirage · − injection</small></div>
+    <div class="reading" style="--c: var(--store)"><span>Autoconsommation</span><strong id="r-auto">0 %</strong><small>part de la production gardée</small></div>
+  </section>
+
+  <section class="battery-edit" aria-label="Solde de la batterie virtuelle">
+    <div class="ctl">
+      <label for="bat-input">Corriger le solde de la batterie virtuelle (kWh)</label>
+      <input id="bat-input" type="number" min="0" step="0.1" inputmode="decimal">
+    </div>
+    <button id="bat-save" type="button">Enregistrer le solde</button>
+    <span class="note" id="bat-note"></span>
+  </section>
+
+  <p class="note">Production : appareil ECU de l'intégration APsystems (mise à jour toutes les 5 minutes). Ecojoko : puissance instantanée (+ soutirage, − injection). Le solde de la batterie virtuelle est une estimation tenue par cette page (énergie injectée − énergie soutirée depuis votre dernière correction) : recalez-le sur votre espace Urban Solar de temps en temps.</p>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const fmtW = (w) => `${Math.round(w).toLocaleString('fr-FR')} W`;
+  const fmtKwh = (k) => `${k.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const flows = {
+    sh: { el: $('f-sh'), label: $('l-sh'), w: 0, off: 0 },
+    sb: { el: $('f-sb'), label: $('l-sb'), w: 0, off: 0 },
+    bh: { el: $('f-bh'), label: $('l-bh'), w: 0, off: 0 },
+  };
+  let pollMs = 10000;
+  let batteryKwh = null;
+
+  function ago(iso) {
+    if (!iso) return '';
+    const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+    return s < 90 ? `il y a ${Math.round(s)} s` : `il y a ${Math.round(s / 60)} min`;
+  }
+
+  function render(d) {
+    const P = d.production.watts;
+    const G = d.grid.watts ?? 0;
+    const C = Math.max(0, P + G);
+    const exportW = Math.max(0, -G);
+    const importW = Math.max(0, G);
+    flows.sh.w = Math.max(0, P - exportW);
+    flows.sb.w = exportW;
+    flows.bh.w = importW;
+    $('v-sun').textContent = fmtW(P);
+    $('v-home').textContent = fmtW(C);
+    $('r-prod').textContent = fmtW(P);
+    $('r-cons').textContent = fmtW(C);
+    $('r-eco').textContent = `${G >= 0 ? '+' : '−'}${fmtW(Math.abs(G))}`;
+    $('r-eco-hint').textContent = G >= 0 ? 'soutirage du réseau' : 'injection vers Urban Solar';
+    $('r-auto').textContent = P > 0 ? `${Math.round((flows.sh.w / P) * 100)} %` : '—';
+    for (const f of Object.values(flows)) {
+      f.label.textContent = f.w >= 5 ? fmtW(f.w) : '';
+      f.el.style.strokeWidth = f.w >= 5 ? Math.min(12, 3 + f.w / 350) : 0;
+    }
+    batteryKwh = d.battery.kwh;
+    $('v-bat').textContent = fmtKwh(batteryKwh);
+    const level = Math.min(1, batteryKwh / 500);
+    const h = Math.max(4, 62 * level);
+    $('b-fill').setAttribute('height', String(h));
+    $('b-fill').setAttribute('y', String(36 - h));
+    if (document.activeElement !== $('bat-input')) $('bat-input').value = batteryKwh.toFixed(1);
+    $('bat-note').textContent = d.battery.setAt ? `corrigé le ${new Date(d.battery.setAt).toLocaleDateString('fr-FR')}` : '';
+    const prodAge = d.production.changedAt ? Date.now() - Date.parse(d.production.changedAt) : 0;
+    const stale = prodAge > 15 * 60 * 1000 && P > 0;
+    $('status').dataset.state = stale ? 'stale' : 'ok';
+    $('status-text').textContent = `Production ${ago(d.production.changedAt)} · Ecojoko ${ago(d.grid.changedAt)}`;
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch('api/flow', { cache: 'no-store' });
+      const d = await res.json();
+      pollMs = (d.pollSeconds ?? 10) * 1000;
+      if (!d.ok) {
+        $('status').dataset.state = 'error';
+        $('status-text').textContent = `Gladys : ${d.error}`;
+      } else {
+        render(d);
+      }
+    } catch (err) {
+      $('status').dataset.state = 'error';
+      $('status-text').textContent = 'Le service ne répond pas';
+    }
+    setTimeout(refresh, pollMs);
+  }
+
+  $('bat-save').addEventListener('click', async () => {
+    const kwh = Number(String($('bat-input').value).replace(',', '.'));
+    if (!Number.isFinite(kwh) || kwh < 0) { $('bat-note').textContent = 'Saisissez un nombre de kWh positif.'; return; }
+    const res = await fetch('api/battery', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kwh }) });
+    $('bat-note').textContent = res.ok ? 'Solde enregistré.' : 'Échec de l\'enregistrement.';
+  });
+
+  const tick = () => { $('clock').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
+  tick(); setInterval(tick, 10000);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (!reduce) {
+      for (const f of Object.values(flows)) {
+        if (f.w < 5) continue;
+        f.off -= dt * (18 + f.w / 25);
+        f.el.style.strokeDashoffset = f.off;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  refresh();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
