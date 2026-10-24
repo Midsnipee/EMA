@@ -36,6 +36,14 @@ Usable in scenes (e.g. injection > 1,000 W → start the washing machine). The
 balance is an estimate kept by the service: correct it from the service
 page.
 
+## The Urban Solar virtual battery
+
+A second device, **Batterie virtuelle Urban Solar**, with the energy of the
+day: **sent to the battery today** (kWh injected) and **taken from the
+battery today** (kWh drawn). The flux-solaire service computes them from the
+Ecojoko power every 10 s and resets them at midnight. A gap of more than 10
+minutes in the service is not counted.
+
 ## The widget
 
 The diagram of the flux-solaire page: panels, house and virtual battery, dots running along the arrows (faster as the power rises), the values on the arrows, and on the right the four readings (production, consumption, Ecojoko, self-consumption) with the time of the last reading. It is an animated WebP image: set **Theme of the picture** (dark or light) in the widget settings to match the Gladys theme. On a PC, put the widget in a narrow dashboard column so it does not take the whole width.

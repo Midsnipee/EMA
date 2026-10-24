@@ -7,13 +7,23 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { renderPicture } from './src/render.js';
 import { labelsOf, pictureKey } from './src/picture.js';
-import { WIDGET, buildDevice, flowsOf, statesOf, widgetContent } from './src/flux.js';
+import {
+  WIDGET,
+  batteryStatesOf,
+  buildBatteryDevice,
+  buildDevice,
+  flowsOf,
+  statesOf,
+  widgetContent,
+} from './src/flux.js';
 
 const TIME_ZONE = process.env.TZ || 'Europe/Paris';
 const themeOf = (settings) => (settings?.theme === 'light' ? 'light' : 'dark');
 
 const gladys = new GladysIntegration();
 const DEVICE = gladys.externalIds('house', 'main').device;
+const BATTERY = gladys.externalIds('battery', 'urban-solar').device;
+const discovered = () => [buildDevice(DEVICE), buildBatteryDevice(BATTERY)];
 
 const state = {
   config: { service_url: '', page_url: '', poll_interval: 15 },
@@ -26,6 +36,7 @@ const state = {
   rendering: Promise.resolve(), // one render at a time: it is CPU work on the Gladys host
   pending: new Map(), // theme -> key being rendered
   created: false,
+  batteryCreated: false,
 };
 
 function normalize(raw = {}) {
@@ -81,6 +92,7 @@ function scheduleRender(theme) {
 async function refreshCreated() {
   const devices = await gladys.getDevices();
   state.created = devices.some((d) => d.external_id === DEVICE);
+  state.batteryCreated = devices.some((d) => d.external_id === BATTERY);
 }
 
 async function poll() {
@@ -104,8 +116,12 @@ async function poll() {
     const before = state.flows ? JSON.stringify(state.flows) : null;
     state.flows = flowsOf(data);
     state.error = null;
-    if (state.created) {
-      await gladys.publishChangedStates(statesOf(DEVICE, state.flows), { heartbeat: 15 * 60_000 });
+    const states = [
+      ...(state.created ? statesOf(DEVICE, state.flows) : []),
+      ...(state.batteryCreated ? batteryStatesOf(BATTERY, state.flows) : []),
+    ];
+    if (states.length > 0) {
+      await gladys.publishChangedStates(states, { heartbeat: 15 * 60_000 });
     }
     await gladys.setConnectionStatus(true, {
       en: `Production ${state.flows.production} W, house ${state.flows.consumption} W.`,
@@ -133,7 +149,7 @@ async function poll() {
 async function start(raw) {
   stop();
   state.config = normalize(raw);
-  await gladys.publishDiscoveredDevices([buildDevice(DEVICE)]);
+  await gladys.publishDiscoveredDevices(discovered());
   await refreshCreated();
   await poll();
   state.timer = setInterval(() => poll().catch((e) => logger.error(e)), state.config.poll_interval * 1000);
@@ -148,11 +164,14 @@ function stop() {
 }
 
 // --- Handlers, before connect() ------------------------------------------------------
-gladys.onScanRequest(() => gladys.publishDiscoveredDevices([buildDevice(DEVICE)]));
+gladys.onScanRequest(() => gladys.publishDiscoveredDevices(discovered()));
 gladys.onDeviceCreated(async () => {
   await refreshCreated();
   if (state.flows) {
-    await gladys.publishChangedStates(statesOf(DEVICE, state.flows));
+    await gladys.publishChangedStates([
+      ...(state.created ? statesOf(DEVICE, state.flows) : []),
+      ...(state.batteryCreated ? batteryStatesOf(BATTERY, state.flows) : []),
+    ]);
   }
 });
 gladys.onDeviceDeleted(() => refreshCreated());

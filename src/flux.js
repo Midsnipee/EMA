@@ -23,6 +23,37 @@ export const FEATURE = {
 
 export const WIDGET = 'flux';
 
+/** Feature keys of the virtual battery device (forever). */
+export const BATTERY_FEATURE = {
+  INJECTED_TODAY: 'injected_today',
+  DRAWN_TODAY: 'drawn_today',
+};
+
+/**
+ * The Urban Solar virtual battery, its energy of the day: what was sent to it
+ * (injected) and what the house took from it. No core type means "energy of
+ * the day of a battery": plain kWh values, kept out of the energy screens.
+ */
+export function buildBatteryDevice(deviceId) {
+  return {
+    name: 'Batterie virtuelle Urban Solar',
+    external_id: deviceId,
+    features: [
+      feature(deviceId, BATTERY_FEATURE.INJECTED_TODAY, "Envoyé vers la batterie aujourd'hui", C.UNKNOWN, T.UNKNOWN.UNKNOWN, U.KILOWATT_HOUR, 1000),
+      feature(deviceId, BATTERY_FEATURE.DRAWN_TODAY, "Pris sur la batterie aujourd'hui", C.UNKNOWN, T.UNKNOWN.UNKNOWN, U.KILOWATT_HOUR, 1000),
+    ],
+  };
+}
+
+export function batteryStatesOf(deviceId, f) {
+  return [
+    [BATTERY_FEATURE.INJECTED_TODAY, f.injectedToday],
+    [BATTERY_FEATURE.DRAWN_TODAY, f.drawnToday],
+  ]
+    .filter(([, v]) => v !== null && v !== undefined && Number.isFinite(v))
+    .map(([key, state]) => ({ device_feature_external_id: `${deviceId}:${key}`, state }));
+}
+
 /**
  * The flows from one /api/flow answer. The grid power is signed: + drawn
  * from the grid (the virtual battery gives back), - injected (it stores).
@@ -42,6 +73,9 @@ export function flowsOf(data) {
     discharge: Math.round(discharge),
     remaining: Number.isFinite(data?.battery?.kwh) ? Number(data.battery.kwh.toFixed(2)) : null,
     selfConsumption: production > 0 ? Math.round((solarToHome / production) * 100) : null,
+    // Kept by the flux-solaire service, reset at its local midnight.
+    injectedToday: Number.isFinite(data?.today?.injectedKwh) ? Number(data.today.injectedKwh.toFixed(3)) : null,
+    drawnToday: Number.isFinite(data?.today?.drawnKwh) ? Number(data.today.drawnKwh.toFixed(3)) : null,
     productionAt: data?.production?.changedAt ?? null,
     gridAt: data?.grid?.changedAt ?? null,
   };

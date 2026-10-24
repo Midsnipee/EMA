@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent, validateWidgetImage } from '@gladysassistant/integration-sdk';
-import { buildDevice, flowsOf, statesOf, widgetContent } from '../src/flux.js';
+import { batteryStatesOf, buildBatteryDevice, buildDevice, flowsOf, statesOf, widgetContent } from '../src/flux.js';
 import { labelsOf, periodsPerLoop, pictureKey } from '../src/picture.js';
 import { renderPicture } from '../src/render.js';
 
@@ -10,6 +10,7 @@ const sample = {
   production: { watts: 816, changedAt: new Date().toISOString() },
   grid: { watts: -600, changedAt: new Date().toISOString() },
   battery: { kwh: 123.456 },
+  today: { date: '2026-10-24', injectedKwh: 3.4567, drawnKwh: 0.8 },
 };
 
 test('the flows of the real reading: 816 W produced, 600 W injected', () => {
@@ -53,4 +54,14 @@ test('the animated picture and the widget pass the core rules', async () => {
   ]) {
     assert.deepEqual(validateWidgetContent(content), []);
   }
+});
+
+test('the virtual battery device: the energy of the day', () => {
+  const d = buildBatteryDevice('ext:x:battery:urban-solar');
+  assert.equal(d.features.length, 2);
+  assert.deepEqual(
+    batteryStatesOf('ext:x:battery:urban-solar', flowsOf(sample)).map((s) => s.state),
+    [3.457, 0.8],
+  );
+  assert.deepEqual(batteryStatesOf('ext:x:battery:urban-solar', flowsOf({ ...sample, today: undefined })), []);
 });

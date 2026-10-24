@@ -36,6 +36,14 @@ Utilisables dans les scènes (par exemple : injection > 1 000 W → lancer le
 lave-linge). Le solde est une estimation tenue par le service : recalez-le
 depuis la page du service.
 
+## La batterie virtuelle Urban Solar
+
+Un second appareil, **Batterie virtuelle Urban Solar**, avec l'énergie du
+jour : **Envoyé vers la batterie aujourd'hui** (kWh injectés) et **Pris sur
+la batterie aujourd'hui** (kWh soutirés). Le service flux-solaire les calcule
+à partir de la puissance Ecojoko toutes les 10 s et les remet à zéro à
+minuit. Une coupure de plus de 10 minutes du service n'est pas comptée.
+
 ## Le widget
 
 Le schéma de la page flux-solaire : panneaux, maison et batterie virtuelle, des points qui défilent le long des flèches (plus vite quand la puissance monte), les valeurs sur les flèches, et à droite les quatre mesures (production, consommation, Ecojoko, autoconsommation) avec l'heure de la dernière lecture. C'est une image WebP animée : réglage **Thème du schéma** (sombre ou clair) dans les paramètres du widget, à accorder au thème de Gladys. Sur PC, placez le widget dans une colonne étroite du tableau de bord pour qu'il ne prenne pas toute la largeur.
