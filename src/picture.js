@@ -64,7 +64,6 @@ const strokeOf = (w) => (w >= 5 ? Math.min(12, 3 + w / 350) : 0);
 
 /** What the picture shows, as text: its key changes when any of it changes. */
 export function labelsOf(f, { now = new Date(), timeZone = 'Europe/Paris' } = {}) {
-  const grid = f.discharge > 0 ? f.discharge : -f.charge;
   return {
     sun: fmtW(f.production),
     home: fmtW(f.consumption),
@@ -74,9 +73,9 @@ export function labelsOf(f, { now = new Date(), timeZone = 'Europe/Paris' } = {}
     bh: f.discharge >= 5 ? fmtW(f.discharge) : '',
     production: fmtW(f.production),
     consumption: fmtW(f.consumption),
-    // No sign: the label says which way the power goes.
-    ecojoko: fmtW(Math.abs(grid)),
-    ecojokoLabel: grid > 0 ? 'SOUTIRAGE URBAN SOLAR' : 'INJECTION URBAN SOLAR',
+    // Two cards, no sign: what goes to the virtual battery, what the house takes from it.
+    injection: fmtW(f.charge),
+    fromBattery: fmtW(f.discharge),
     auto: f.selfConsumption === null ? '—' : `${f.selfConsumption} %`,
     time: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone }),
   };
@@ -143,13 +142,14 @@ ${tracks}${moving}
   const cards = [
     { label: 'PRODUCTION', value: L.production, color: c.sun },
     { label: 'CONSOMMATION', value: L.consumption, color: c.home },
-    { label: L.ecojokoLabel, value: L.ecojoko, color: c.grid },
-    { label: 'AUTOCONSOMMATION', value: L.auto, color: c.store },
+    { label: 'INJECTION URBAN SOLAR', value: L.injection, color: c.grid },
+    { label: 'CONSOMMATION SUR BATTERIE', value: L.fromBattery, color: c.store },
+    { label: 'AUTOCONSOMMATION', value: L.auto, color: c.home },
   ];
   const x = 900;
   const w = 356;
-  const h = 112;
-  const gap = 22;
+  const h = 100;
+  const gap = 16;
   const top = (SIZE.height - (cards.length * h + (cards.length - 1) * gap)) / 2 + 14;
   const readings = cards
     .map((card, i) => {
@@ -157,8 +157,8 @@ ${tracks}${moving}
       return `<g transform="translate(${x} ${y})">
   <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="${c.surface}"/>
   <rect x="0" y="0" width="5" height="${h}" rx="2.5" fill="${card.color}"/>
-  <text x="26" y="38" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
-  <text x="26" y="88" font-family="${FONT.display}" font-size="42" fill="${c.ink}">${esc(card.value)}</text>
+  <text x="26" y="34" font-family="${FONT.mono}" font-size="15" letter-spacing="1.4" fill="${c.muted}">${esc(card.label)}</text>
+  <text x="26" y="80" font-family="${FONT.display}" font-size="40" fill="${c.ink}">${esc(card.value)}</text>
 </g>`;
     })
     .join('');
